@@ -1,0 +1,18 @@
+{
+  "id":"./",
+  "name":"MechBees Repair & Service",
+  "short_name":"MechBees Repair",
+  "description":"MechBees repair service, billing and cloud bill history application.",
+  "lang":"en-IN",
+  "dir":"ltr",
+  "start_url":"./",
+  "scope":"./",
+  "display":"standalone",
+  "orientation":"portrait",
+  "background_color":"#ffffff",
+  "theme_color":"#4fa447",
+  "icons":[
+    {"src":"./icons/icon-192.png","sizes":"192x192","type":"image/png","purpose":"any maskable"},
+    {"src":"./icons/icon-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}
+  ]
+}
