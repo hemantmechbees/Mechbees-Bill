@@ -582,7 +582,7 @@ if(configReady){
   try{
     const app=initializeApp(firebaseConfig);
     const auth=getAuth(app), db=getFirestore(app);
-    firebaseInitialized=true;
+    // Removed: firebaseInitialized was never declared or used.
     window.firebaseSaveBill=async b=>setDoc(doc(db,'bills',String(b.id)),b);
     window.firebaseSubscribeBills=onChanged=>{
       if(firebaseUnsubscribe) firebaseUnsubscribe();
