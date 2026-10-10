@@ -404,7 +404,7 @@ function makeInvoice(){
   document.getElementById('preview').scrollIntoView({behavior:'smooth'});
 }
 
-async function shareInvoiceWhatsApp(savedBill=null){){
+async function shareInvoiceWhatsApp(savedBill=null){
   const customer=(savedBill?.customer || document.getElementById('customer').value || 'Customer').trim();
   const mobile=String(savedBill?.mobile ?? document.getElementById('mobile').value ?? '').replace(/\D/g,'');
   const invoiceNo=document.getElementById('iNo').textContent||'';
