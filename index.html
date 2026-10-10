@@ -209,6 +209,7 @@ button.action{
     </div>
   </div>
 </div>
+    <div id="billPreviewSlot"></div>
   </div>
 
 <div id="historyTab" class="tab-panel">
@@ -333,15 +334,25 @@ function getFinancialYear(dateStr){
   return String(start).slice(-2)+'-'+String(start+1).slice(-2);
 }
 function getLastInvoiceNumber(){
-  return localStorage.getItem('mechbees_last_invoice_no') || '';
+  const candidates=[localStorage.getItem('mechbees_last_invoice_no')||'',...getHistory().map(b=>b.invoiceNo||'')];
+  let best='',bestFy='',bestSeq=-1;
+  for(const inv of candidates){const m=inv.match(/^MB\/(\d{2}-\d{2})\/(\d+)$/);if(!m)continue;const seq=Number(m[2])||0;if(m[1]>bestFy||(m[1]===bestFy&&seq>bestSeq)){best=inv;bestFy=m[1];bestSeq=seq}}
+  return best;
 }
 function getNextInvoiceNumber(dateStr){
-  const fy=getFinancialYear(dateStr);
-  const last=getLastInvoiceNumber();
-  let n=0;
-  const m=last.match(/^MB\/(\d{2})-(\d{2})\/(\d+)$/);
-  if(m && (m[1]+'-'+m[2])===fy) n=parseInt(m[3],10)||0;
+  const fy=getFinancialYear(dateStr); let n=0;
+  const candidates=[localStorage.getItem('mechbees_last_invoice_no')||'',...getHistory().map(b=>b.invoiceNo||'')];
+  for(const inv of candidates){const m=inv.match(/^MB\/(\d{2}-\d{2})\/(\d+)$/);if(m&&m[1]===fy)n=Math.max(n,Number(m[2])||0)}
   return `MB/${fy}/${String(n+1).padStart(3,'0')}`;
+}
+function refreshSuggestedInvoiceNumber(){
+  if(editingBillId)return;
+  const preview=document.getElementById('preview');
+  if(preview&&preview.style.display!=='none')return;
+  const date=document.getElementById('date')?.value||new Date().toISOString().slice(0,10);
+  const field=document.getElementById('invoiceNo');
+  if(field)field.value=getNextInvoiceNumber(date);
+  updateInvoiceHint();
 }
 function updateInvoiceHint(){
   const last=getLastInvoiceNumber();
@@ -387,13 +398,15 @@ function makeInvoice(){
     body.appendChild(tr);
   });
   saveBillRecord();
+  document.getElementById('billPreviewSlot').appendChild(document.getElementById('preview'));
+  showTab('bill');
   document.getElementById('preview').style.display='block';
   document.getElementById('preview').scrollIntoView({behavior:'smooth'});
 }
 
-async function shareInvoiceWhatsApp(){
-  const customer=(document.getElementById('customer').value||'Customer').trim();
-  const mobile=(document.getElementById('mobile').value||'').replace(/\D/g,'');
+async function shareInvoiceWhatsApp(savedBill=null){){
+  const customer=(savedBill?.customer || document.getElementById('customer').value || 'Customer').trim();
+  const mobile=String(savedBill?.mobile ?? document.getElementById('mobile').value ?? '').replace(/\D/g,'');
   const invoiceNo=document.getElementById('iNo').textContent||'';
   const total=document.getElementById('iTotal').textContent||'0.00';
 
