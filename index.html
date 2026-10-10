@@ -539,7 +539,29 @@ function viewBill(id){
   const body=document.getElementById('iItems');body.innerHTML='';let n=1;(b.items||[]).forEach(x=>{const q=Number(x.qty)||0,rate=Number(x.rate)||0;if(q<=0&&rate<=0&&!x.desc)return;const tr=document.createElement('tr');tr.innerHTML=`<td>${n++}</td><td>${escapeHtml(String(x.desc||'Repair Service'))}</td><td>${q}</td><td>₹ ${money(rate)}</td><td class="right">₹ ${money(q*rate)}</td>`;body.appendChild(tr)});editingBillId=null;document.getElementById('editBanner').classList.remove('show');document.getElementById('preview').style.display='block';document.getElementById('preview').scrollIntoView({behavior:'smooth'});
 }
 async function deleteBill(id){const b=getHistory().find(x=>x.id===id);if(!b)return;if(confirm('Delete '+b.invoiceNo+' from Bill History?')){setHistory(getHistory().filter(x=>x.id!==id));if(window.firebaseDeleteBill&&window.cloudReady)await window.firebaseDeleteBill(id).catch(e=>console.warn(e));if(editingBillId===id)cancelEdit();renderHistory()}}
-function cancelEdit(){editingBillId=null;document.getElementById('editBanner').classList.remove('show');const today=new Date().toISOString().slice(0,10);document.getElementById('date').value=today;document.getElementById('invoiceNo').value=getNextInvoiceNumber(today);document.getElementById('preview').style.display='none';updateInvoiceHint()}
+//function cancelEdit(){editingBillId=null;document.getElementById('editBanner').classList.remove('show');const today=new Date().toISOString().slice(0,10);document.getElementById('date').value=today;document.getElementById('invoiceNo').value=getNextInvoiceNumber(today);document.getElementById('preview').style.display='none';updateInvoiceHint()}
+function cancelEdit(){
+  // Cancel means discard the current edit/draft and return to a clean new-bill form.
+  editingBillId=null;
+  document.getElementById('editBanner').classList.remove('show');
+  const today=new Date().toISOString().slice(0,10);
+  ['customer','mobile','vehicle','technician','notes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('date').value=today;
+  document.getElementById('invoiceNo').value=getNextInvoiceNumber(today);
+  document.getElementById('discount').value='0';
+  document.getElementById('gst').value='0';
+  document.getElementById('mode').value='UPI';
+  document.getElementById('status').value='Paid';
+  document.getElementById('warranty').value='As specified on invoice';
+  document.getElementById('items').innerHTML='';
+  count=0;
+  addItem('Inspection / Diagnosis',1,0);
+  addItem('Repair / Service Labour',1,0);
+  document.getElementById('preview').style.display='none';
+  showTab('bill');
+  calc();
+  updateInvoiceHint();
+}
 async function whatsappBill(id){const b=getHistory().find(x=>x.id===id);if(!b)return;viewBill(id);setTimeout(()=>shareInvoiceWhatsApp(),100)}
 function exportHistoryCSV(){const a=getHistory();if(!a.length){alert('No bill history to export.');return}const rows=[['Date','Invoice No','Customer','Mobile','Vehicle/Product','Technician','Subtotal','Discount','GST','Total','Payment Mode','Status','Warranty','Notes']];a.forEach(b=>rows.push([b.date,b.invoiceNo,b.customer,b.mobile,b.vehicle,b.technician,b.subtotal,b.discount,b.gst,b.total,b.mode,b.status,b.warranty,b.notes]));const csv=rows.map(r=>r.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\n');downloadFile(csv,'mechbees-bill-history.csv','text/csv;charset=utf-8')}
 function exportHistoryJSON(){downloadFile(JSON.stringify(getHistory(),null,2),'mechbees-bill-history-backup.json','application/json')}
