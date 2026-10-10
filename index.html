@@ -474,10 +474,8 @@ function escapeHtml(s){
 // ---------- Bill History + Firebase Cloud Firestore ----------
 const HISTORY_KEY='mechbees_bill_history_v1';
 let editingBillId=null;
-let cloudUser=null;
-let cloudReady=false;
-let firebaseInitialized=false;
-let firebaseUnsubscribe=null;
+window.cloudUser=null;
+window.cloudReady=false;
 function getHistory(){try{return JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]')}catch(e){return []}}
 function setHistory(a){localStorage.setItem(HISTORY_KEY,JSON.stringify(a))}
 function showTab(tab){
@@ -502,7 +500,7 @@ async function saveBillRecord(){
   const idx=existing.findIndex(b=>b.id===record.id || b.invoiceNo===record.invoiceNo);
   if(idx>=0) existing[idx]=record; else existing.unshift(record);
   setHistory(existing); editingBillId=record.id; document.getElementById('editBanner').classList.add('show');
-  if(window.firebaseSaveBill && cloudReady){
+  if(window.firebaseSaveBill && window.cloudReady){
     document.getElementById('cloudSyncStatus').textContent='☁ Saving...';
     window.firebaseSaveBill(record).then(()=>{
       const el=document.getElementById('cloudSyncStatus'); if(el) el.textContent='☁ Saved to Cloud';
@@ -544,9 +542,9 @@ async function whatsappBill(id){const b=getHistory().find(x=>x.id===id);if(!b)re
 function exportHistoryCSV(){const a=getHistory();if(!a.length){alert('No bill history to export.');return}const rows=[['Date','Invoice No','Customer','Mobile','Vehicle/Product','Technician','Subtotal','Discount','GST','Total','Payment Mode','Status','Warranty','Notes']];a.forEach(b=>rows.push([b.date,b.invoiceNo,b.customer,b.mobile,b.vehicle,b.technician,b.subtotal,b.discount,b.gst,b.total,b.mode,b.status,b.warranty,b.notes]));const csv=rows.map(r=>r.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\n');downloadFile(csv,'mechbees-bill-history.csv','text/csv;charset=utf-8')}
 function exportHistoryJSON(){downloadFile(JSON.stringify(getHistory(),null,2),'mechbees-bill-history-backup.json','application/json')}
 function downloadFile(data,name,type){const blob=new Blob([data],{type});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
-async function importHistoryJSON(e){const f=e.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=async()=>{try{const incoming=JSON.parse(r.result);if(!Array.isArray(incoming))throw 0;setHistory(incoming);if(window.firebaseSaveBill&&cloudReady){for(const b of incoming)await window.firebaseSaveBill(b)}renderHistory();alert('Bill history restored and uploaded to cloud successfully.')}catch(x){console.error(x);alert('Invalid backup file or cloud upload failed.')}};r.readAsText(f)}
-async function clearAllHistory(){if(confirm('Delete ALL saved bills from this device and cloud? This cannot be undone.')){const all=getHistory();localStorage.removeItem(HISTORY_KEY);if(window.firebaseDeleteBill&&cloudReady){for(const b of all)await window.firebaseDeleteBill(b.id).catch(()=>{})}editingBillId=null;renderHistory()}}
-async function migrateLocalToCloud(){if(!cloudReady||!window.firebaseSaveBill){alert('Please sign in to Firebase first.');return}const all=getHistory();if(!all.length){alert('No local bills to upload.');return}let n=0;for(const b of all){await window.firebaseSaveBill(b);n++}alert(n+' bill(s) uploaded to Firebase successfully.');await renderHistory()}
+async function importHistoryJSON(e){const f=e.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=async()=>{try{const incoming=JSON.parse(r.result);if(!Array.isArray(incoming))throw 0;setHistory(incoming);if(window.firebaseSaveBill&&window.cloudReady){for(const b of incoming)await window.firebaseSaveBill(b)}renderHistory();alert('Bill history restored and uploaded to cloud successfully.')}catch(x){console.error(x);alert('Invalid backup file or cloud upload failed.')}};r.readAsText(f)}
+async function clearAllHistory(){if(confirm('Delete ALL saved bills from this device and cloud? This cannot be undone.')){const all=getHistory();localStorage.removeItem(HISTORY_KEY);if(window.firebaseDeleteBill&&window.cloudReady){for(const b of all)await window.firebaseDeleteBill(b.id).catch(()=>{})}editingBillId=null;renderHistory()}}
+async function migrateLocalToCloud(){if(!window.cloudReady||!window.firebaseSaveBill){alert('Please sign in to Firebase first.');return}const all=getHistory();if(!all.length){alert('No local bills to upload.');return}let n=0;for(const b of all){await window.firebaseSaveBill(b);n++}alert(n+' bill(s) uploaded to Firebase successfully.');await renderHistory()}
 
 addItem('Inspection / Diagnosis',1,0);
 addItem('Repair / Service Labour',1,0);
@@ -577,7 +575,8 @@ const configReady = firebaseConfig.apiKey !== "YOUR_API_KEY" && firebaseConfig.p
 const loginBox=document.getElementById('firebaseLogin');
 const appBox=document.getElementById('firebaseApp');
 const loginMsg=document.getElementById('firebaseLoginMsg');
-
+let firebaseUnsubscribe=null;
+  
 if(configReady){
   try{
     const app=initializeApp(firebaseConfig);
@@ -601,7 +600,7 @@ if(configReady){
     window.firebaseLogin=async()=>{try{loginMsg.textContent='Signing in...';await signInWithEmailAndPassword(auth,document.getElementById('fbEmail').value.trim(),document.getElementById('fbPassword').value);loginMsg.textContent=''}catch(e){console.error(e);loginMsg.textContent=e.code==='auth/invalid-credential'?'Invalid email or password.':'Login failed: '+e.message}};
     window.firebaseLogout=async()=>{await signOut(auth)};
     onAuthStateChanged(auth,async user=>{
-      cloudUser=user;cloudReady=!!user;
+      window.cloudUser=user;window.cloudReady=!!user;
       if(user){
         loginBox.style.display='none';appBox.style.display='block';
         const status=document.getElementById('cloudSyncStatus');
