@@ -615,7 +615,8 @@ if(configReady){
         loginBox.style.display='block';appBox.style.display='none';
       }
     });
-  }catch(e){console.error('Firebase initialization failed',e);loginBox.style.display='block';loginMsg.textContent='Firebase configuration is invalid.'}
+  } catch (e) {  console.error('Firebase initialization failed:', e);  loginBox.style.display = 'block';  appBox.style.display = 'none';loginMsg.textContent ='Firebase error: ' + (e.code || e.name || 'Unknown error') +' — ' + (e.message || 'Check the browser console.');
+              }
 }else{
   // Before Firebase configuration is added, keep the app accessible locally.
   // This lets the user finish Firebase setup without breaking billing.
