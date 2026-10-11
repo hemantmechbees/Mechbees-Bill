@@ -694,10 +694,17 @@ function cancelEdit(){
   document.getElementById('mode').value='UPI';
   document.getElementById('status').value='Paid';
   document.getElementById('warranty').value='As specified on invoice';
-  document.getElementById('items').innerHTML='';
-  count=0;
-  addItem('Inspection / Diagnosis',1,0,0);
-  addItem('Repair / Service Labour',1,0,0);
+  document.querySelectorAll('#items tr').forEach(row => {
+  const desc = row.querySelector('.desc');
+  const qty = row.querySelector('.qty');
+  const rate = row.querySelector('.rate');
+  const gst = row.querySelector('.item-gst');
+
+  if (desc) desc.value = '';
+  if (qty) qty.value = '1';
+  if (rate) rate.value = '0';
+  if (gst) gst.value = '0';
+  });
   document.getElementById('preview').style.display='none';
   showTab('bill');
   calc();
