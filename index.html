@@ -362,6 +362,22 @@ function updateInvoiceHint(){
 }
 function makeInvoice(){
   const get=id=>document.getElementById(id).value.trim();
+  const customer = get('customer');
+  const mobile = get('mobile').replace(/\D/g, '');
+  const validMobile = /^\d{10}$/.test(mobile);
+  
+  if (!customer) {
+    alert('Please enter customer name.');
+    document.getElementById('customer').focus();
+    return;
+  }
+  
+  if (!validMobile) {
+    alert('Please enter a valid 10-digit mobile number.');
+    document.getElementById('mobile').focus();
+    return;
+  }
+  
   const d=get('date') || new Date().toISOString().slice(0,10);
   const [y,m,day]=d.split('-');
   const inv=get('invoiceNo');
