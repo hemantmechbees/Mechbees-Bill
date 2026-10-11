@@ -696,8 +696,8 @@ function cancelEdit(){
   document.getElementById('warranty').value='As specified on invoice';
   document.getElementById('items').innerHTML='';
   count=0;
-  addItem('Inspection / Diagnosis',1,0);
-  addItem('Repair / Service Labour',1,0);
+  addItem('Inspection / Diagnosis',1,0,0);
+  addItem('Repair / Service Labour',1,0,0);
   document.getElementById('preview').style.display='none';
   showTab('bill');
   calc();
