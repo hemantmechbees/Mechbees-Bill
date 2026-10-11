@@ -705,6 +705,10 @@ function cancelEdit(){
   if (rate) rate.value = '0';
   if (gst) gst.value = '0';
   });
+  if (document.querySelectorAll('#items tr').length === 0) {
+  count = 0;
+  addItem('', 1, 0, 0, 0);
+  }
   document.getElementById('preview').style.display='none';
   showTab('bill');
   calc();
