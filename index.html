@@ -698,9 +698,6 @@ function cancelEdit(){
   count=0;
   addItem('', 1, 0, 0);
   addItem('', 1, 0, 0);
-  document.querySelectorAll('#items tr').forEach(row => {
-    const rateInput = row.querySelector('.rate');
-    const gstSelect = row.querySelector('.item-gst');
   document.getElementById('preview').style.display='none';
   showTab('bill');
   calc();
