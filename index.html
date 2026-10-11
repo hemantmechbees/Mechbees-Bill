@@ -178,7 +178,7 @@ button.action{
       <div class="section-head">Repair / Parts / Labour</div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th style="width:44%">Description</th><th>Qty</th><th>Rate (₹)</th><th>Amount</th><th></th></tr></thead>
+          <thead><tr><th style="width:32%">Description</th><th>Qty</th><th>Rate (₹)</th><th>GST Rate</th><th>Amount (₹)</th><th></th></tr></thead>
           <tbody id="items"></tbody>
         </table>
       </div>
@@ -189,7 +189,7 @@ button.action{
       <div class="section-head">Payment & Warranty</div>
       <div class="grid">
         <div class="field"><label>Discount (₹)</label><input id="discount" type="number" value="0" min="0" oninput="calc()"></div>
-        <div class="field"><label>GST</label><select id="gst" onchange="calc()"><option value="0">No</option><option value="18">Yes - 18%</option></select></div>
+        <div class="field"><label>GST Calculation</label><input value="Item-wise GST: 0%, 5% or 18%" readonly></div>
         <div class="field"><label>Payment Mode</label><select id="mode"><option>UPI</option><option>Cash</option><option>Bank Transfer</option><option>Card</option><option>Pending</option></select></div>
         <div class="field"><label>Payment Status</label><select id="status"><option>Paid</option><option>Partially Paid</option><option>Pending</option></select></div>
         <div class="field"><label>Repair Warranty</label><input id="warranty" value="As specified on invoice"></div>
@@ -267,7 +267,7 @@ button.action{
     </div>
 
     <table class="inv-table">
-      <thead><tr><th>#</th><th>Description</th><th>Qty</th><th>Rate</th><th class="right">Amount</th></tr></thead>
+      <thead><tr><th>#</th><th>Description</th><th>Qty</th><th>Rate</th><th>GST</th><th class="right">Amount</th></tr></thead>
       <tbody id="iItems"></tbody>
     </table>
 
@@ -310,24 +310,84 @@ button.action{
 <script>
 let count=0;
 const money=n=>(Number(n)||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
-function addItem(desc='',qty=1,rate=0){
+function addItem(desc = '', qty = 1, rate = 0, gstRate = 0) {
   count++;
-  const tr=document.createElement('tr');
-  tr.innerHTML=`<td><input class="desc" value="${desc}" placeholder="Part / repair / labour"></td>
-  <td><input class="qty" type="number" min="0" value="${qty}" oninput="calc()"></td>
-  <td><input class="rate" type="number" min="0" value="${rate}" oninput="calc()"></td>
-  <td class="amount">₹ 0.00</td>
-  <td><button class="icon-btn" onclick="this.closest('tr').remove();calc()">×</button></td>`;
-  document.getElementById('items').appendChild(tr);calc();
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td>
+      <input class="desc" placeholder="Part / repair / labour">
+    </td>
+    <td>
+      <input class="qty" type="number" min="0" value="${qty}" oninput="calc()">
+    </td>
+    <td>
+      <input class="rate" type="number" min="0" value="${rate}" oninput="calc()">
+    </td>
+    <td>
+      <select class="item-gst" onchange="calc()">
+        <option value="0" ${Number(gstRate) === 0 ? 'selected' : ''}>No GST</option>
+        <option value="5" ${Number(gstRate) === 5 ? 'selected' : ''}>5% GST</option>
+        <option value="18" ${Number(gstRate) === 18 ? 'selected' : ''}>18% GST</option>
+      </select>
+    </td>
+    <td class="amount">₹ 0.00</td>
+    <td>
+      <button type="button" class="icon-btn"
+        onclick="this.closest('tr').remove(); calc()">×</button>
+    </td>
+  `;
+
+  tr.querySelector('.desc').value = desc;
+
+  document.getElementById('items').appendChild(tr);
+  calc();
 }
-function calc(){
-  let sub=0;
-  document.querySelectorAll('#items tr').forEach(r=>{
-    const q=+r.querySelector('.qty').value||0, rate=+r.querySelector('.rate').value||0;
-    const a=q*rate; sub+=a; r.querySelector('.amount').textContent='₹ '+money(a);
+function calc() {
+  let sub = 0;
+  let gst = 0;
+
+  const rows = [...document.querySelectorAll('#items tr')];
+  const items = rows.map(r => {
+    const qty = Number(r.querySelector('.qty').value) || 0;
+    const rate = Number(r.querySelector('.rate').value) || 0;
+    const gstRate = Number(r.querySelector('.item-gst').value) || 0;
+    const amount = qty * rate;
+
+    sub += amount;
+    return { r, amount, gstRate };
   });
-  const disc=+document.getElementById('discount').value||0;
-  const gstRate=+document.getElementById('gst').value||0; const taxable=Math.max(0,sub-disc); const gst=taxable*gstRate/100; return {sub,disc,gst,total:taxable+gst};
+
+  const disc = Math.max(
+    0,
+    Number(document.getElementById('discount').value) || 0
+  );
+
+  // Do not allow the discount to exceed the subtotal.
+  const appliedDiscount = Math.min(disc, sub);
+  const taxable = Math.max(0, sub - appliedDiscount);
+
+  items.forEach(item => {
+    // Allocate the overall discount proportionally to each item.
+    const itemDiscount = sub > 0
+      ? appliedDiscount * item.amount / sub
+      : 0;
+
+    const taxableAmount = Math.max(0, item.amount - itemDiscount);
+    const itemGst = taxableAmount * item.gstRate / 100;
+
+    gst += itemGst;
+    item.r.querySelector('.amount').textContent =
+      '₹ ' + money(item.amount);
+  });
+
+  const total = taxable + gst;
+
+  return {
+    sub,
+    disc: appliedDiscount,
+    gst,
+    total
+  };
 }
 function getFinancialYear(dateStr){
   const d=new Date(dateStr+'T00:00:00');
@@ -398,7 +458,7 @@ function makeInvoice(){
   document.getElementById('iTech').textContent=get('technician')||'-';
   document.getElementById('iMode').textContent=get('mode');
   document.getElementById('iStatus').textContent=get('status');
-  document.getElementById('iGstStatus').textContent=(+get('gst')===18?'18%':'No GST'); document.getElementById('iWarranty').textContent=get('warranty')||'-';
+  document.getElementById('iGstStatus').textContent = 'Item-wise GST'; document.getElementById('iWarranty').textContent=get('warranty')||'-';
   document.getElementById('iNotes').textContent=get('notes')||'No additional notes provided.';
   document.getElementById('iSub').textContent=money(x.sub);
   document.getElementById('iDisc').textContent=money(x.disc);
@@ -407,12 +467,14 @@ function makeInvoice(){
 
   const body=document.getElementById('iItems'); body.innerHTML='';
   let n=1;
-  document.querySelectorAll('#items tr').forEach(r=>{
-    const desc=r.querySelector('.desc').value||'Repair Service';
-    const q=+r.querySelector('.qty').value||0, rate=+r.querySelector('.rate').value||0;
-    if(q<=0 && rate<=0) return;
-    const tr=document.createElement('tr');
-    tr.innerHTML=`<td>${n++}</td><td>${escapeHtml(desc)}</td><td>${q}</td><td>₹ ${money(rate)}</td><td class="right">₹ ${money(q*rate)}</td>`;
+  document.querySelectorAll('#items tr').forEach(r => {
+    const desc = r.querySelector('.desc').value || 'Repair Service';
+    const q = Number(r.querySelector('.qty').value) || 0;
+    const rate = Number(r.querySelector('.rate').value) || 0;
+    const gstRate = Number(r.querySelector('.item-gst').value) || 0;
+    if (q <= 0 && rate <= 0) return;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${n++}</td><td>${escapeHtml(desc)}</td><td>${q}</td><td>₹ ${money(rate)}</td><td>${gstRate}%</td><td class="right">₹ ${money(q * rate)}</td>`;
     body.appendChild(tr);
   });
   saveBillRecord();
@@ -510,10 +572,12 @@ function buildBillRecord(){
   const x=calc(); const items=[];
   document.querySelectorAll('#items tr').forEach(r=>{
     const desc=(r.querySelector('.desc')?.value||'').trim(); const qty=+(r.querySelector('.qty')?.value||0); const rate=+(r.querySelector('.rate')?.value||0);
-    if(desc || qty || rate) items.push({desc,qty,rate});
+    const gstRate = Number(r.querySelector('.item-gst')?.value) || 0;
+    if (desc || qty || rate) {items.push({ desc, qty, rate, gstRate });
+    }
   });
   const inv=get('invoiceNo'), now=new Date().toISOString(), existing=getHistory(), id=editingBillId||('MB-'+Date.now());
-  return {id,invoiceNo:inv,date:get('date'),customer:get('customer')||'Walk-in Customer',mobile:get('mobile'),vehicle:get('vehicle'),technician:get('technician'),discount:x.disc,gstRate:+get('gst')||0,gst:x.gst,subtotal:x.sub,total:x.total,mode:get('mode'),status:get('status'),warranty:get('warranty'),notes:get('notes'),items,updatedAt:now,createdAt:existing.find(b=>b.id===id)?.createdAt||now};
+  return {id,invoiceNo:inv,date:get('date'),customer:get('customer')||'Walk-in Customer',mobile:get('mobile'),vehicle:get('vehicle'),technician:get('technician'),discount:x.disc,gstRate: null,gst:x.gst,subtotal:x.sub,total:x.total,mode:get('mode'),status:get('status'),warranty:get('warranty'),notes:get('notes'),items,updatedAt:now,createdAt:existing.find(b=>b.id===id)?.createdAt||now};
 }
 async function saveBillRecord(){
   const record=buildBillRecord(); const existing=getHistory();
@@ -548,14 +612,84 @@ function editBill(id){
   const b=getHistory().find(x=>x.id===id);if(!b)return; editingBillId=id;
   const fields={invoiceNo:b.invoiceNo,date:b.date,customer:b.customer,mobile:b.mobile,vehicle:b.vehicle,technician:b.technician,discount:b.discount,gst:b.gstRate??0,mode:b.mode,status:b.status,warranty:b.warranty,notes:b.notes};
   Object.keys(fields).forEach(k=>{const el=document.getElementById(k);if(el)el.value=fields[k]??''});
-  document.getElementById('items').innerHTML='';count=0;(b.items||[]).forEach(x=>addItem(x.desc,x.qty,x.rate));if(!(b.items||[]).length)addItem();calc();updateInvoiceHint();document.getElementById('editBanner').classList.add('show');document.getElementById('preview').style.display='none';showTab('bill');window.scrollTo({top:0,behavior:'smooth'});
+  document.getElementById('items').innerHTML='';count=0;(b.items||[]).forEach(x=>addItem(x.desc, x.qty, x.rate, x.gstRate ?? 0));if(!(b.items||[]).length)addItem();calc();updateInvoiceHint();document.getElementById('editBanner').classList.add('show');document.getElementById('preview').style.display='none';showTab('bill');window.scrollTo({top:0,behavior:'smooth'});
 }
 function duplicateBill(id){const b=getHistory().find(x=>x.id===id);if(!b)return;editBill(id);const today=new Date().toISOString().slice(0,10);document.getElementById('date').value=today;document.getElementById('invoiceNo').value=getNextInvoiceNumber(today);editingBillId=null;document.getElementById('editBanner').classList.remove('show');calc();alert('Bill copied as a new draft. Review and click Generate Invoice to save it.')}
-function viewBill(id){
-  const b=getHistory().find(x=>x.id===id);if(!b)return;const p=(b.date||'').split('-');
-  document.getElementById('iNo').textContent=b.invoiceNo||'';document.getElementById('iDate').textContent=p.length===3?`${p[2]}-${p[1]}-${p[0]}`:(b.date||'');document.getElementById('iCustomer').textContent=b.customer||'Walk-in Customer';document.getElementById('iMobile').textContent=b.mobile||'-';document.getElementById('iVehicle').textContent=b.vehicle||'-';document.getElementById('iTech').textContent=b.technician||'-';document.getElementById('iMode').textContent=b.mode||'';document.getElementById('iStatus').textContent=b.status||'';document.getElementById('iGstStatus').textContent=(Number(b.gstRate)||0)===18?'18%':'No GST';document.getElementById('iWarranty').textContent=b.warranty||'-';document.getElementById('iNotes').textContent=b.notes||'No additional notes provided.';document.getElementById('iSub').textContent=money(b.subtotal||0);document.getElementById('iDisc').textContent=money(b.discount||0);document.getElementById('iGst').textContent=money(b.gst||0);document.getElementById('iTotal').textContent=money(b.total||0);
-  const body=document.getElementById('iItems');body.innerHTML='';let n=1;(b.items||[]).forEach(x=>{const q=Number(x.qty)||0,rate=Number(x.rate)||0;if(q<=0&&rate<=0&&!x.desc)return;const tr=document.createElement('tr');tr.innerHTML=`<td>${n++}</td><td>${escapeHtml(String(x.desc||'Repair Service'))}</td><td>${q}</td><td>₹ ${money(rate)}</td><td class="right">₹ ${money(q*rate)}</td>`;body.appendChild(tr)});editingBillId=null;document.getElementById('editBanner').classList.remove('show');document.getElementById('historyPreviewSlot').appendChild(document.getElementById('preview'));document.getElementById('preview').style.display='block';showTab('history');document.getElementById('preview').scrollIntoView({behavior:'smooth'});
+function viewBill(id) {
+  const b = getHistory().find(x => String(x.id) === String(id));
+
+  if (!b) {
+    alert('Invoice not found in Bill History.');
+    return;
+  }
+
+  const p = (b.date || '').split('-');
+
+  document.getElementById('iNo').textContent = b.invoiceNo || '';
+  document.getElementById('iDate').textContent =
+    p.length === 3 ? `${p[2]}-${p[1]}-${p[0]}` : (b.date || '');
+
+  document.getElementById('iCustomer').textContent =
+    b.customer || 'Walk-in Customer';
+  document.getElementById('iMobile').textContent = b.mobile || '-';
+  document.getElementById('iVehicle').textContent = b.vehicle || '-';
+  document.getElementById('iTech').textContent = b.technician || '-';
+  document.getElementById('iMode').textContent = b.mode || '';
+  document.getElementById('iStatus').textContent = b.status || '';
+  document.getElementById('iGstStatus').textContent = 'Item-wise GST';
+  document.getElementById('iWarranty').textContent = b.warranty || '-';
+  document.getElementById('iNotes').textContent =
+    b.notes || 'No additional notes provided.';
+
+  document.getElementById('iSub').textContent = money(b.subtotal || 0);
+  document.getElementById('iDisc').textContent = money(b.discount || 0);
+  document.getElementById('iGst').textContent = money(b.gst || 0);
+  document.getElementById('iTotal').textContent = money(b.total || 0);
+
+  const body = document.getElementById('iItems');
+  body.innerHTML = '';
+
+  let n = 1;
+
+  (b.items || []).forEach(x => {
+    const q = Number(x.qty) || 0;
+    const rate = Number(x.rate) || 0;
+    const gstRate = Number(x.gstRate) || 0;
+
+    if (q <= 0 && rate <= 0 && !x.desc) return;
+
+    const tr = document.createElement('tr');
+
+    const values = [
+      n++,
+      x.desc || 'Repair Service',
+      q,
+      '₹ ' + money(rate),
+      gstRate === 0 ? 'No GST' : gstRate + '%',
+      '₹ ' + money(q * rate)
+    ];
+
+    values.forEach((value, index) => {
+      const td = document.createElement('td');
+      td.textContent = value;
+      if (index === 5) td.className = 'right';
+      tr.appendChild(td);
+    });
+
+    body.appendChild(tr);
+  });
+
+  editingBillId = null;
+  document.getElementById('editBanner').classList.remove('show');
+
+  const preview = document.getElementById('preview');
+  preview.style.display = 'block';
+
+  document.getElementById('billPreviewSlot').appendChild(preview);
+  showTab('bill');
+  preview.scrollIntoView({ behavior: 'smooth' });
 }
+  
 async function deleteBill(id){const b=getHistory().find(x=>x.id===id);if(!b)return;if(confirm('Delete '+b.invoiceNo+' from Bill History?')){setHistory(getHistory().filter(x=>x.id!==id));if(window.firebaseDeleteBill&&window.cloudReady)await window.firebaseDeleteBill(id).catch(e=>console.warn(e));if(editingBillId===id)cancelEdit();renderHistory()}}
 //function cancelEdit(){editingBillId=null;document.getElementById('editBanner').classList.remove('show');const today=new Date().toISOString().slice(0,10);document.getElementById('date').value=today;document.getElementById('invoiceNo').value=getNextInvoiceNumber(today);document.getElementById('preview').style.display='none';updateInvoiceHint()}
 function cancelEdit(){
