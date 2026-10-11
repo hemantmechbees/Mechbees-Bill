@@ -505,7 +505,7 @@ async function shareInvoiceWhatsApp(savedBill=null){
   else if(phone.startsWith('0') && phone.length===11) phone='91'+phone.substring(1);
   else if(!phone.startsWith('91')) phone='91'+phone;
 
-  const message=`Dear ${customer},\n\nThank you for choosing MechBees Smart Mobility Pvt. Ltd.\n\nYour repair invoice ${invoiceNo} has been generated.\nInvoice Amount: ₹${total}\n\nPlease find your invoice PDF attached.\n\nFor service support\n\nHemant: +91 98340 74692\n\nAnkush: +91 75887 98049\n\nThank you,\nMechBees Smart Mobility Pvt. Ltd.`;
+  const message=`Dear ${customer},\n\nThank you for choosing MechBees Smart Mobility Pvt. Ltd.\n\nYour repair invoice ${invoiceNo} has been generated.\nInvoice Amount: ₹${total}\nPayment Status:${stayus}\n\nPlease find your invoice PDF attached.\n\nFor service support\n\nHemant: +91 98340 74692\n\nAnkush: +91 75887 98049\n\nThank you,\nMechBees Smart Mobility Pvt. Ltd.`;
 
   // First create a fixed A4 PDF layout. This prevents html2canvas from
   // capturing the responsive/mobile alignment of the on-screen preview.
