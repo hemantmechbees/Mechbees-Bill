@@ -617,20 +617,14 @@ function editBill(id){
 function duplicateBill(id){const b=getHistory().find(x=>x.id===id);if(!b)return;editBill(id);const today=new Date().toISOString().slice(0,10);document.getElementById('date').value=today;document.getElementById('invoiceNo').value=getNextInvoiceNumber(today);editingBillId=null;document.getElementById('editBanner').classList.remove('show');calc();alert('Bill copied as a new draft. Review and click Generate Invoice to save it.')}
 function viewBill(id) {
   const b = getHistory().find(x => String(x.id) === String(id));
-
   if (!b) {
     alert('Invoice not found in Bill History.');
     return;
   }
-
   const p = (b.date || '').split('-');
-
   document.getElementById('iNo').textContent = b.invoiceNo || '';
-  document.getElementById('iDate').textContent =
-    p.length === 3 ? `${p[2]}-${p[1]}-${p[0]}` : (b.date || '');
-
-  document.getElementById('iCustomer').textContent =
-    b.customer || 'Walk-in Customer';
+  document.getElementById('iDate').textContent =p.length === 3 ? `${p[2]}-${p[1]}-${p[0]}` : (b.date || '');
+  document.getElementById('iCustomer').textContent =b.customer || 'Walk-in Customer';
   document.getElementById('iMobile').textContent = b.mobile || '-';
   document.getElementById('iVehicle').textContent = b.vehicle || '-';
   document.getElementById('iTech').textContent = b.technician || '-';
@@ -638,9 +632,7 @@ function viewBill(id) {
   document.getElementById('iStatus').textContent = b.status || '';
   document.getElementById('iGstStatus').textContent = 'Item-wise GST';
   document.getElementById('iWarranty').textContent = b.warranty || '-';
-  document.getElementById('iNotes').textContent =
-    b.notes || 'No additional notes provided.';
-
+  document.getElementById('iNotes').textContent = b.notes || 'No additional notes provided.';
   document.getElementById('iSub').textContent = money(b.subtotal || 0);
   document.getElementById('iDisc').textContent = money(b.discount || 0);
   document.getElementById('iGst').textContent = money(b.gst || 0);
@@ -681,13 +673,10 @@ function viewBill(id) {
 
   editingBillId = null;
   document.getElementById('editBanner').classList.remove('show');
-
-  const preview = document.getElementById('preview');
-  preview.style.display = 'block';
-
-  document.getElementById('billPreviewSlot').appendChild(preview);
-  showTab('bill');
-  preview.scrollIntoView({ behavior: 'smooth' });
+  document.getElementById('historyPreviewSlot').appendChild(document.getElementById('preview'));
+  document.getElementById('preview').style.display='block';
+  showTab('history');
+  document.getElementById('preview').scrollIntoView({behavior:'smooth'});
 }
   
 async function deleteBill(id){const b=getHistory().find(x=>x.id===id);if(!b)return;if(confirm('Delete '+b.invoiceNo+' from Bill History?')){setHistory(getHistory().filter(x=>x.id!==id));if(window.firebaseDeleteBill&&window.cloudReady)await window.firebaseDeleteBill(id).catch(e=>console.warn(e));if(editingBillId===id)cancelEdit();renderHistory()}}
