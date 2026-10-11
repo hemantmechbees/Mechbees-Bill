@@ -681,39 +681,67 @@ function viewBill(id) {
   
 async function deleteBill(id){const b=getHistory().find(x=>x.id===id);if(!b)return;if(confirm('Delete '+b.invoiceNo+' from Bill History?')){setHistory(getHistory().filter(x=>x.id!==id));if(window.firebaseDeleteBill&&window.cloudReady)await window.firebaseDeleteBill(id).catch(e=>console.warn(e));if(editingBillId===id)cancelEdit();renderHistory()}}
 //function cancelEdit(){editingBillId=null;document.getElementById('editBanner').classList.remove('show');const today=new Date().toISOString().slice(0,10);document.getElementById('date').value=today;document.getElementById('invoiceNo').value=getNextInvoiceNumber(today);document.getElementById('preview').style.display='none';updateInvoiceHint()}
-function cancelEdit(){
-  // Cancel means discard the current edit/draft and return to a clean new-bill form.
-  editingBillId=null;
-  document.getElementById('editBanner').classList.remove('show');
-  const today=new Date().toISOString().slice(0,10);
-  ['customer','mobile','vehicle','technician','notes'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('date').value=today;
-  document.getElementById('invoiceNo').value=getNextInvoiceNumber(today);
-  document.getElementById('discount').value='0';
-  document.getElementById('gst').value='0';
-  document.getElementById('mode').value='UPI';
-  document.getElementById('status').value='Paid';
-  document.getElementById('warranty').value='As specified on invoice';
-  document.querySelectorAll('#items tr').forEach(row => {
-  const desc = row.querySelector('.desc');
-  const qty = row.querySelector('.qty');
-  const rate = row.querySelector('.rate');
-  const gst = row.querySelector('.item-gst');
 
-  if (desc) desc.value = '';
-  if (qty) qty.value = '1';
-  if (rate) rate.value = '0';
-  if (gst) gst.value = '0';
-  });
-  if (document.querySelectorAll('#items tr').length === 0) {
-  count = 0;
-  addItem('', 1, 0, 0, 0);
+function cancelEdit() {
+  // Exit edit mode and reset the form without rebuilding the item table.
+  editingBillId = null;
+
+  const editBanner = document.getElementById('editBanner');
+  if (editBanner) editBanner.classList.remove('show');
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  const setValue = (id, value) => {
+    const field = document.getElementById(id);
+    if (field) field.value = value;
+  };
+
+  // Reset customer and bill details
+  ['customer', 'mobile', 'vehicle', 'technician', 'notes']
+    .forEach(id => setValue(id, ''));
+
+  setValue('date', today);
+  setValue('invoiceNo', getNextInvoiceNumber(today));
+  setValue('discount', '0');
+  setValue('mode', 'UPI');
+  setValue('status', 'Paid');
+  setValue('warranty', 'As specified on invoice');
+
+  // Reset existing item rows without deleting table controls
+  const itemsBody = document.getElementById('items');
+
+  if (itemsBody) {
+    let rows = itemsBody.querySelectorAll('tr');
+
+    // Restore default rows only if all rows were removed
+    if (rows.length === 0) {
+      addItem('Inspection / Diagnosis', 1, 0, 0, 0);
+      addItem('Repair / Service Labour', 1, 0, 0, 0);
+      rows = itemsBody.querySelectorAll('tr');
+    }
+
+    rows.forEach(row => {
+      const desc = row.querySelector('.desc');
+      const qty = row.querySelector('.qty');
+      const rate = row.querySelector('.rate');
+      const gst = row.querySelector('.item-gst');
+
+      if (desc) desc.value = '';
+      if (qty) qty.value = '1';
+      if (rate) rate.value = '0';
+      if (gst) gst.value = '0';
+    });
   }
-  document.getElementById('preview').style.display='none';
+
+  // Hide preview and refresh totals
+  const preview = document.getElementById('preview');
+  if (preview) preview.style.display = 'none';
+
   showTab('bill');
   calc();
   updateInvoiceHint();
 }
+
 async function whatsappBill(id){const b=getHistory().find(x=>x.id===id);if(!b)return;viewBill(id);setTimeout(()=>shareInvoiceWhatsApp(b),100)}
 function exportHistoryCSV(){const a=getHistory();if(!a.length){alert('No bill history to export.');return}const rows=[['Date','Invoice No','Customer','Mobile','Vehicle/Product','Technician','Subtotal','Discount','GST','Total','Payment Mode','Status','Warranty','Notes']];a.forEach(b=>rows.push([b.date,b.invoiceNo,b.customer,b.mobile,b.vehicle,b.technician,b.subtotal,b.discount,b.gst,b.total,b.mode,b.status,b.warranty,b.notes]));const csv=rows.map(r=>r.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\n');downloadFile(csv,'mechbees-bill-history.csv','text/csv;charset=utf-8')}
 function exportHistoryJSON(){downloadFile(JSON.stringify(getHistory(),null,2),'mechbees-bill-history-backup.json','application/json')}
@@ -722,8 +750,8 @@ async function importHistoryJSON(e){const f=e.target.files?.[0];if(!f)return;con
 async function clearAllHistory(){if(confirm('Delete ALL saved bills from this device and cloud? This cannot be undone.')){const all=getHistory();localStorage.removeItem(HISTORY_KEY);if(window.firebaseDeleteBill&&window.cloudReady){for(const b of all)await window.firebaseDeleteBill(b.id).catch(()=>{})}editingBillId=null;renderHistory()}}
 async function migrateLocalToCloud(){if(!window.cloudReady||!window.firebaseSaveBill){alert('Please sign in to Firebase first.');return}const all=getHistory();if(!all.length){alert('No local bills to upload.');return}let n=0;for(const b of all){await window.firebaseSaveBill(b);n++}alert(n+' bill(s) uploaded to Firebase successfully.');await renderHistory()}
 
-addItem('Inspection / Diagnosis',1,0,0);
-addItem('Repair / Service Labour',1,0,0);
+addItem('Inspection / Diagnosis',1,0,0,0);
+addItem('Repair / Service Labour',1,0,0,0);
 const today=new Date().toISOString().slice(0,10);
 document.getElementById('date').value=today;
 document.getElementById('invoiceNo').value=getNextInvoiceNumber(today);
