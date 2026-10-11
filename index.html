@@ -564,7 +564,7 @@ function cancelEdit(){
   calc();
   updateInvoiceHint();
 }
-async function whatsappBill(id){const b=getHistory().find(x=>x.id===id);if(!b)return;viewBill(id);setTimeout(()=>shareInvoiceWhatsApp(),100)}
+async function whatsappBill(id){const b=getHistory().find(x=>x.id===id);if(!b)return;viewBill(id);setTimeout(()=>shareInvoiceWhatsApp(b),100)}
 function exportHistoryCSV(){const a=getHistory();if(!a.length){alert('No bill history to export.');return}const rows=[['Date','Invoice No','Customer','Mobile','Vehicle/Product','Technician','Subtotal','Discount','GST','Total','Payment Mode','Status','Warranty','Notes']];a.forEach(b=>rows.push([b.date,b.invoiceNo,b.customer,b.mobile,b.vehicle,b.technician,b.subtotal,b.discount,b.gst,b.total,b.mode,b.status,b.warranty,b.notes]));const csv=rows.map(r=>r.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\n');downloadFile(csv,'mechbees-bill-history.csv','text/csv;charset=utf-8')}
 function exportHistoryJSON(){downloadFile(JSON.stringify(getHistory(),null,2),'mechbees-bill-history-backup.json','application/json')}
 function downloadFile(data,name,type){const blob=new Blob([data],{type});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
