@@ -696,21 +696,17 @@ function cancelEdit(){
   document.getElementById('warranty').value='As specified on invoice';
   document.getElementById('items').innerHTML='';
   count=0;
-  addItem('Inspection / Diagnosis',1,0,0,0);
-  addItem('Repair / Service Labour',1,0,0,0);
+  addItem('', 1, 0, 0);
+  addItem('', 1, 0, 0);
   document.querySelectorAll('#items tr').forEach(row => {
     const rateInput = row.querySelector('.rate');
     const gstSelect = row.querySelector('.item-gst');
-
-    if (rateInput) {
-      rateInput.value = '0';
-    }
-
-    if (gstSelect) {
-      gstSelect.value = '0';
-    }
-  });
   document.getElementById('preview').style.display='none';
+  document.getElementById('iItems').innerHTML = '';
+  ['iCustomer', 'iMobile', 'iVehicle', 'iTech', 'iNotes',
+   'iSub', 'iDisc', 'iGst', 'iTotal'].forEach(id => {
+    document.getElementById(id).textContent = '';
+  });
   showTab('bill');
   calc();
   updateInvoiceHint();
