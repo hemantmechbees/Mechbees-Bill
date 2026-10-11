@@ -696,8 +696,8 @@ function cancelEdit(){
   document.getElementById('warranty').value='As specified on invoice';
   document.getElementById('items').innerHTML='';
   count=0;
-  addItem('', 1, 0, 0);
-  addItem('', 1, 0, 0);
+  addItem('Inspection / Diagnosis',1,0,0);
+  addItem('Repair / Service Labour',1,0,0);
   document.getElementById('preview').style.display='none';
   showTab('bill');
   calc();
@@ -711,8 +711,8 @@ async function importHistoryJSON(e){const f=e.target.files?.[0];if(!f)return;con
 async function clearAllHistory(){if(confirm('Delete ALL saved bills from this device and cloud? This cannot be undone.')){const all=getHistory();localStorage.removeItem(HISTORY_KEY);if(window.firebaseDeleteBill&&window.cloudReady){for(const b of all)await window.firebaseDeleteBill(b.id).catch(()=>{})}editingBillId=null;renderHistory()}}
 async function migrateLocalToCloud(){if(!window.cloudReady||!window.firebaseSaveBill){alert('Please sign in to Firebase first.');return}const all=getHistory();if(!all.length){alert('No local bills to upload.');return}let n=0;for(const b of all){await window.firebaseSaveBill(b);n++}alert(n+' bill(s) uploaded to Firebase successfully.');await renderHistory()}
 
-addItem('Inspection / Diagnosis',1,0);
-addItem('Repair / Service Labour',1,0);
+addItem('Inspection / Diagnosis',1,0,0);
+addItem('Repair / Service Labour',1,0,0);
 const today=new Date().toISOString().slice(0,10);
 document.getElementById('date').value=today;
 document.getElementById('invoiceNo').value=getNextInvoiceNumber(today);
