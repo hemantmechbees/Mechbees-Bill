@@ -702,11 +702,6 @@ function cancelEdit(){
     const rateInput = row.querySelector('.rate');
     const gstSelect = row.querySelector('.item-gst');
   document.getElementById('preview').style.display='none';
-  document.getElementById('iItems').innerHTML = '';
-  ['iCustomer', 'iMobile', 'iVehicle', 'iTech', 'iNotes',
-   'iSub', 'iDisc', 'iGst', 'iTotal'].forEach(id => {
-    document.getElementById(id).textContent = '';
-  });
   showTab('bill');
   calc();
   updateInvoiceHint();
