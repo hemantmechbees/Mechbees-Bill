@@ -224,7 +224,7 @@ button.action{
     </div>
     <div class="history-tools">
       <input id="historySearch" placeholder="Search invoice, customer, mobile, vehicle..." oninput="renderHistory()">
-      <select id="historyStatus" onchange="renderHistory()"><option value="">All Payment Status</option><option>Paid</option><option>Pending</option><option>Partial</option></select>
+      <select id="historyStatus" onchange="renderHistory()"><option value="">All Payment Status</option><option>Paid</option><option>Pending</option><option>Partially Paid</option></select>
       <select id="historySort" onchange="renderHistory()"><option value="new">Newest first</option><option value="old">Oldest first</option><option value="amountHigh">Highest amount</option><option value="amountLow">Lowest amount</option></select>
     </div>
     <div class="table-wrap">
@@ -594,7 +594,7 @@ function renderHistory(){
   const body=document.getElementById('historyBody'); if(!body)return;
   let arr=getHistory(); const q=(document.getElementById('historySearch')?.value||'').toLowerCase().trim(); const st=document.getElementById('historyStatus')?.value||'';
   if(q) arr=arr.filter(b=>[b.invoiceNo,b.customer,b.mobile,b.vehicle,b.technician].join(' ').toLowerCase().includes(q));
-  if(st) arr=arr.filter(b=>b.status===st);
+  if(st) arr=arr.filter(b=>st==='Partial'? ['Partial','Partially Paid'].includes(b.status?.trim()): b.status?.trim()===st);
   const sort=document.getElementById('historySort')?.value||'new';
   arr.sort((a,b)=>sort==='old'?a.date.localeCompare(b.date):sort==='amountHigh'?b.total-a.total:sort==='amountLow'?a.total-b.total:(b.updatedAt||b.date).localeCompare(a.updatedAt||a.date));
   body.innerHTML='';
